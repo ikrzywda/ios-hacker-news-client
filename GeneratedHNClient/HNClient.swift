@@ -7,18 +7,27 @@
 
 import OpenAPIURLSession
 
+public typealias HNItem = Components.Schemas.Item
+public typealias HNGetItemSchema = Operations.get_item.Input
+public typealias HNGetItemPath = Operations.get_item.Input.Path
 
 public struct HNClient {
 
+    private let client: Client?
 
-    public init() {}
-
+    public init() throws {
+        do {
+            self.client = try Client(
+                serverURL: Servers.server1(),
+                transport: URLSessionTransport()
+            )
+        } catch {
+            self.client = nil
+        }
+    }
 
     public func getTopStories() async throws -> [Int32] {
-        let client = Client(
-            serverURL: try Servers.server1(),
-            transport: URLSessionTransport()
-        )
+        guard let client else { throw URLError(.cannotConnectToHost) }
         let response = try await client.get_top_stories()
         switch response {
         case .ok(let okResponse):
@@ -26,8 +35,24 @@ public struct HNClient {
             case .json(let topStories):
                 return topStories
             }
-        case .undocumented(statusCode: let statusCode, _):
-            return [-1, Int32(statusCode)]
+        case .undocumented:
+            throw URLError(.badServerResponse)
+        }
+    }
+    
+    public func getItem(itemId: Int) async throws -> HNItem {
+        guard let client else { throw URLError(.cannotConnectToHost) }
+        
+        let response = try await 
+            client.get_item(HNGetItemSchema(path: HNGetItemPath(id: String(itemId))))
+        switch response {
+        case .ok(let okResponse):
+            switch okResponse.body {
+            case .json(let item):
+                return item
+            }
+        case .undocumented:
+            throw URLError(.badServerResponse)
         }
     }
 }
