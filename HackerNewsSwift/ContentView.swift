@@ -6,16 +6,27 @@
 //
 
 import SwiftUI
+import GeneratedHNClient
 
 struct ContentView: View {
+    @State private var apiResult: [Int32] = []
     var body: some View {
         VStack {
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Text("Hello, HN openapi client!")
+            ForEach(apiResult, id: \.self) { res in
+                Text("\(res)")
+            }
         }
         .padding()
+        .onAppear {
+            Task {
+                apiResult = try await GeneratedHNClient.HNClient().getTopStories()
+                print(apiResult)
+            }
+        }
     }
 }
 
